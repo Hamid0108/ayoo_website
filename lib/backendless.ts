@@ -581,8 +581,15 @@ export class BackendlessService {
     try {
       const queryBuilder = Backendless.DataQueryBuilder.create()
       queryBuilder.setWhereClause(`merchantId = '${merchantId}'`)
+      // Sort by updatedAt DESC to get the most recent one in case of duplicates
+      queryBuilder.setSortBy(["updatedAt DESC"])
 
       const stores = await Backendless.Data.of("StoreInfo").find(queryBuilder)
+      
+      if (stores.length > 1) {
+        console.warn(`Found ${stores.length} StoreInfo records for merchant ${merchantId}. Using the most recent one.`)
+      }
+
       return stores.length > 0 ? (stores[0] as StoreInfo) : null
     } catch (error) {
       console.error("Failed to fetch store info:", error)
