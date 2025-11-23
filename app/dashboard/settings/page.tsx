@@ -35,13 +35,13 @@ import { BackendlessService, type StoreInfo } from "@/lib/backendless"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useStore } from "@/lib/StoreContext"
 
 export default function SettingsPage() {
   const { user, updateUser, logout } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
-  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { storeInfo, loading, toggleStoreStatus } = useStore()
 
   // Account Settings
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false)
@@ -75,9 +75,25 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
-      loadSettings()
+      setAccountFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      })
     }
   }, [user])
+
+  useEffect(() => {
+    if (storeInfo) {
+      setStoreSettings((prev) => ({
+        ...prev,
+        storeOpen: storeInfo.storeOpen || false,
+      }))
+    }
+  }, [storeInfo])
 
   // If the page is opened with ?tab=account, open the account dialog
   const searchParams = useSearchParams()
@@ -92,36 +108,6 @@ export default function SettingsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, user])
-
-  const loadSettings = async () => {
-    try {
-      if (!user) return
-
-      const merchantId = user.merchantId || `merchant_${user.objectId}`
-      const info = await BackendlessService.getStoreInfo(merchantId)
-
-      setStoreInfo(info)
-      setAccountFormData({
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        email: user.email || "",
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      })
-
-      if (info) {
-        setStoreSettings((prev) => ({
-          ...prev,
-          storeOpen: info.storeOpen || true,
-        }))
-      }
-    } catch (error) {
-      console.error("Failed to load settings:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleAccountUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -156,49 +142,6 @@ export default function SettingsPage() {
       setError(err.message || "Failed to update account information")
     } finally {
       setUpdateLoading(false)
-    }
-  }
-
-  const handleStoreToggle = async () => {
-    try {
-      if (!storeInfo) return
-
-      const newStatus = !storeSettings.storeOpen
-
-      // Optimistic update
-      setStoreSettings((prev) => ({
-        ...prev,
-        storeOpen: newStatus,
-      }))
-
-      const updatedStore = await BackendlessService.updateStoreInfo(storeInfo.objectId!, {
-        storeOpen: newStatus,
-      })
-
-      setStoreInfo(updatedStore)
-      
-      // Ensure state matches server response
-      setStoreSettings((prev) => ({
-        ...prev,
-        storeOpen: updatedStore.storeOpen || false,
-      }))
-
-      toast({
-        title: newStatus ? "Store Opened" : "Store Closed",
-        description: newStatus ? "Your store is now accepting orders." : "Your store is now closed.",
-      })
-    } catch (error) {
-      console.error("Failed to toggle store status:", error)
-      // Revert optimistic update
-      setStoreSettings((prev) => ({
-        ...prev,
-        storeOpen: !prev.storeOpen,
-      }))
-      toast({
-        title: "Error",
-        description: "Failed to update store status. Please try again.",
-        variant: "destructive",
-      })
     }
   }
 
@@ -442,8 +385,8 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-600">Toggle your store open/closed</p>
                   </div>
                   <Switch
-                    checked={storeSettings.storeOpen}
-                    onCheckedChange={handleStoreToggle}
+                    checked={!!storeInfo?.storeOpen}
+                    onCheckedChange={() => toggleStoreStatus()}
                     className="data-[state=checked]:bg-pink-600"
                   />
                 </div>

@@ -28,6 +28,7 @@ import { BackendlessService, type StoreInfo } from "@/lib/backendless"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { useStore } from "@/lib/StoreContext"
 
 const STORE_TYPES = [
   "Food & Restaurant",
@@ -44,8 +45,8 @@ export default function StoreInfoPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
-  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { storeInfo, loading, updateStoreInfo, toggleStoreStatus } = useStore()
+  
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editFormData, setEditFormData] = useState({
     storeName: "",
@@ -60,40 +61,24 @@ export default function StoreInfoPage() {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    if (user) {
-      loadStoreInfo()
+    if (!loading && !storeInfo && user) {
+      router.push("/store-setup")
     }
-  }, [user])
+  }, [loading, storeInfo, user, router])
 
-  const loadStoreInfo = async () => {
-    try {
-      if (!user) return
-
-      const merchantId = user.merchantId || `merchant_${user.objectId}`
-      const info = await BackendlessService.getStoreInfo(merchantId)
-
-      if (!info) {
-        // No store info found, redirect to setup
-        router.push("/store-setup")
-        return
-      }
-
-      setStoreInfo(info)
+  useEffect(() => {
+    if (storeInfo) {
       setEditFormData({
-        storeName: info.storeName,
-        storeType: info.storeType,
-        description: info.description || "",
-        address: info.address || "",
-        contactNumber: info.contactNumber || "",
-        storeOpen: info.storeOpen || true,
+        storeName: storeInfo.storeName,
+        storeType: storeInfo.storeType,
+        description: storeInfo.description || "",
+        address: storeInfo.address || "",
+        contactNumber: storeInfo.contactNumber || "",
+        storeOpen: storeInfo.storeOpen || true,
         logo: null,
       })
-    } catch (error) {
-      console.error("Failed to load store info:", error)
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [storeInfo])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setEditFormData((prev) => ({
@@ -132,23 +117,21 @@ export default function StoreInfoPage() {
       }
 
       // Update store information
-      const updatedStore = await BackendlessService.updateStoreInfo(storeInfo.objectId!, {
+      const updatedData: any = {
         storeName: editFormData.storeName,
         storeType: editFormData.storeType,
         description: editFormData.description,
         address: editFormData.address,
         contactNumber: editFormData.contactNumber,
         storeOpen: editFormData.storeOpen,
-        logoUrl: logoUrl,
-      })
+      }
 
-      setStoreInfo(updatedStore)
+      if (logoUrl) {
+        updatedData.logoUrl = logoUrl
+      }
+
+      await updateStoreInfo(updatedData)
       setIsEditDialogOpen(false)
-      toast({
-        title: "Success",
-        description: "Store information updated successfully",
-        variant: "default",
-      })
     } catch (err: any) {
       setError(err.message || "Failed to update store information")
     } finally {
@@ -156,36 +139,6 @@ export default function StoreInfoPage() {
     }
   }
 
-  const toggleStoreStatus = async () => {
-    try {
-      if (!storeInfo) return
-
-      const newStatus = !storeInfo.storeOpen
-
-      // Optimistic update
-      setStoreInfo((prev) => (prev ? { ...prev, storeOpen: newStatus } : null))
-
-      const updatedStore = await BackendlessService.updateStoreInfo(storeInfo.objectId!, {
-        storeOpen: newStatus,
-      })
-
-      setStoreInfo(updatedStore)
-
-      toast({
-        title: newStatus ? "Store Opened" : "Store Closed",
-        description: newStatus ? "Your store is now accepting orders." : "Your store is now closed.",
-      })
-    } catch (error) {
-      console.error("Failed to toggle store status:", error)
-      // Revert optimistic update
-      setStoreInfo((prev) => (prev ? { ...prev, storeOpen: !prev.storeOpen } : null))
-      toast({
-        title: "Error",
-        description: "Failed to update store status. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
   if (loading) {
     return (
@@ -198,6 +151,8 @@ export default function StoreInfoPage() {
       </ProtectedRoute>
     )
   }
+
+  if (!storeInfo) return null
 
   if (!storeInfo) {
     return null // Will redirect to setup
@@ -383,8 +338,8 @@ export default function StoreInfoPage() {
                   </h4>
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={storeInfo.storeOpen}
-                      onCheckedChange={toggleStoreStatus}
+                      checked={!!storeInfo.storeOpen}
+                      onCheckedChange={() => toggleStoreStatus()}
                       className="data-[state=checked]:bg-pink-600"
                     />
                     <span className="text-sm text-gray-600">
