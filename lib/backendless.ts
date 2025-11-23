@@ -556,6 +556,12 @@ export class BackendlessService {
   static async updateStoreInfo(storeId: string, storeData: Partial<StoreInfo>): Promise<StoreInfo> {
     try {
       console.log("BackendlessService: Updating store info...", { storeId, storeData })
+      
+      // Ensure storeOpen is strictly boolean if present to avoid any serialization issues
+      if (storeData.storeOpen !== undefined) {
+          storeData.storeOpen = !!storeData.storeOpen
+      }
+
       const updateData = {
         ...storeData,
         objectId: storeId,

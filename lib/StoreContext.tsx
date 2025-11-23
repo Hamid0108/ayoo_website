@@ -106,12 +106,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       })
       console.log("Store status updated successfully:", updated)
       
-      // Ensure the returned object has the correct status
-      if (updated.storeOpen !== newStatus) {
-         console.warn("Server returned different status than expected:", updated.storeOpen)
-      }
+      // Force reload to be absolutely sure the server state is reflected
+      // This handles cases where the server response might be stale or partial
+      const refreshed = await BackendlessService.getStoreInfo(currentStoreInfo.merchantId)
+      setStoreInfo(refreshed)
 
-      setStoreInfo(updated)
       toast({
         title: newStatus ? "Store Opened" : "Store Closed",
         description: newStatus ? "Your store is now accepting orders." : "Your store is now closed.",
