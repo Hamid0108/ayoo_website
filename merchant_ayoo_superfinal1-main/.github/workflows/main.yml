@@ -1,16 +1,21 @@
 name: Deploy Next.js to EC2
 
 on:
+  # Trigger on push to main
   push:
     branches:
       - main
+  # ENABLE MANUAL BUTTON (The Fix)
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy to EC2
     runs-on: ubuntu-latest
     
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -19,17 +24,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            # 1. Go to the project folder
+            echo "Connecting to server..."
             cd /var/www/html
-            
-            # 2. Pull the latest code from GitHub
             git pull origin main
-            
-            # 3. Install new dependencies (using your specific fix)
             npm install --legacy-peer-deps
-            
-            # 4. Build the production version
             npm run build
-            
-            # 5. Restart the server with zero downtime
             pm2 restart my-app
