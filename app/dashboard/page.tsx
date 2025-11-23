@@ -12,11 +12,12 @@ import { useAuth } from "@/hooks/useAuth"
 import { BackendlessService } from "@/lib/backendless"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useRouter } from "next/navigation"
+import { useStore } from "@/lib/StoreContext"
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [storeOpen, setStoreOpen] = useState(true)
+  const { storeInfo, toggleStoreStatus } = useStore()
   const [stats, setStats] = useState({
     totalCategories: 0,
     totalProducts: 0,
@@ -87,15 +88,15 @@ export default function DashboardPage() {
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium">Store Status:</span>
                 <Switch
-                  checked={storeOpen}
-                  onCheckedChange={setStoreOpen}
+                  checked={!!storeInfo?.storeOpen}
+                  onCheckedChange={() => toggleStoreStatus()}
                   className="data-[state=checked]:bg-pink-600"
                 />
                 <Badge
-                  variant={storeOpen ? "default" : "secondary"}
-                  className={storeOpen ? "bg-green-100 text-green-800" : ""}
+                  variant={storeInfo?.storeOpen ? "default" : "secondary"}
+                  className={storeInfo?.storeOpen ? "bg-green-100 text-green-800" : ""}
                 >
-                  {storeOpen ? "Open" : "Closed"}
+                  {storeInfo?.storeOpen ? "Open" : "Closed"}
                 </Badge>
               </div>
             </div>
