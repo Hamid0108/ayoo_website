@@ -34,10 +34,12 @@ import { useAuth } from "@/hooks/useAuth"
 import { BackendlessService, type StoreInfo } from "@/lib/backendless"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
   const { user, updateUser, logout } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -161,17 +163,42 @@ export default function SettingsPage() {
     try {
       if (!storeInfo) return
 
+      const newStatus = !storeSettings.storeOpen
+
+      // Optimistic update
+      setStoreSettings((prev) => ({
+        ...prev,
+        storeOpen: newStatus,
+      }))
+
       const updatedStore = await BackendlessService.updateStoreInfo(storeInfo.objectId!, {
-        storeOpen: !storeSettings.storeOpen,
+        storeOpen: newStatus,
       })
 
+      setStoreInfo(updatedStore)
+      
+      // Ensure state matches server response
       setStoreSettings((prev) => ({
         ...prev,
         storeOpen: updatedStore.storeOpen || false,
       }))
-      setStoreInfo(updatedStore)
+
+      toast({
+        title: newStatus ? "Store Opened" : "Store Closed",
+        description: newStatus ? "Your store is now accepting orders." : "Your store is now closed.",
+      })
     } catch (error) {
       console.error("Failed to toggle store status:", error)
+      // Revert optimistic update
+      setStoreSettings((prev) => ({
+        ...prev,
+        storeOpen: !prev.storeOpen,
+      }))
+      toast({
+        title: "Error",
+        description: "Failed to update store status. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 

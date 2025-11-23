@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { BackendlessService, type StoreInfo } from "@/lib/backendless"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 const STORE_TYPES = [
   "Food & Restaurant",
@@ -42,6 +43,7 @@ const STORE_TYPES = [
 export default function StoreInfoPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -142,6 +144,11 @@ export default function StoreInfoPage() {
 
       setStoreInfo(updatedStore)
       setIsEditDialogOpen(false)
+      toast({
+        title: "Success",
+        description: "Store information updated successfully",
+        variant: "default",
+      })
     } catch (err: any) {
       setError(err.message || "Failed to update store information")
     } finally {
@@ -153,13 +160,30 @@ export default function StoreInfoPage() {
     try {
       if (!storeInfo) return
 
+      const newStatus = !storeInfo.storeOpen
+
+      // Optimistic update
+      setStoreInfo((prev) => (prev ? { ...prev, storeOpen: newStatus } : null))
+
       const updatedStore = await BackendlessService.updateStoreInfo(storeInfo.objectId!, {
-        storeOpen: !storeInfo.storeOpen,
+        storeOpen: newStatus,
       })
 
       setStoreInfo(updatedStore)
+
+      toast({
+        title: newStatus ? "Store Opened" : "Store Closed",
+        description: newStatus ? "Your store is now accepting orders." : "Your store is now closed.",
+      })
     } catch (error) {
       console.error("Failed to toggle store status:", error)
+      // Revert optimistic update
+      setStoreInfo((prev) => (prev ? { ...prev, storeOpen: !prev.storeOpen } : null))
+      toast({
+        title: "Error",
+        description: "Failed to update store status. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
