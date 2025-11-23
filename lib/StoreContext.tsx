@@ -65,17 +65,43 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }
 
   const toggleStoreStatus = async () => {
-    if (!storeInfo?.objectId) return
+    console.log("toggleStoreStatus called", { storeInfo })
+    
+    let currentStoreInfo = storeInfo
+    
+    // If storeInfo is missing, try to fetch it if we have a user
+    if (!currentStoreInfo?.objectId && user) {
+      try {
+        const merchantId = user.merchantId || `merchant_${user.objectId}`
+        console.log("Fetching store info before toggle...")
+        currentStoreInfo = await BackendlessService.getStoreInfo(merchantId)
+        setStoreInfo(currentStoreInfo)
+      } catch (e) {
+        console.error("Failed to fetch store info in toggle:", e)
+      }
+    }
 
-    const newStatus = !storeInfo.storeOpen
+    if (!currentStoreInfo?.objectId) {
+      console.error("Cannot toggle store status: storeInfo or objectId is missing")
+      toast({
+        title: "Error",
+        description: "Store information not found. Please refresh the page.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const newStatus = !currentStoreInfo.storeOpen
+    console.log("Toggling store status to:", newStatus)
     
     // Optimistic update
     setStoreInfo((prev: StoreInfo | null) => prev ? { ...prev, storeOpen: newStatus } : null)
 
     try {
-      const updated = await BackendlessService.updateStoreInfo(storeInfo.objectId, {
+      const updated = await BackendlessService.updateStoreInfo(currentStoreInfo.objectId, {
         storeOpen: newStatus
       })
+      console.log("Store status updated successfully:", updated)
       setStoreInfo(updated)
       toast({
         title: newStatus ? "Store Opened" : "Store Closed",
