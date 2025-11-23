@@ -337,14 +337,20 @@ export default function StoreInfoPage() {
                     Store Status
                   </h4>
                   <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={!!storeInfo.storeOpen}
-                      onCheckedChange={() => toggleStoreStatus()}
-                      className="data-[state=checked]:bg-pink-600"
-                    />
-                    <span className="text-sm text-gray-600">
-                      {storeInfo.storeOpen ? "Currently accepting orders" : "Currently closed"}
-                    </span>
+                    {storeInfo ? (
+                      <>
+                        <Switch
+                          checked={!!storeInfo.storeOpen}
+                          onCheckedChange={() => toggleStoreStatus()}
+                          className="data-[state=checked]:bg-pink-600"
+                        />
+                        <span className="text-sm text-gray-600">
+                          {storeInfo.storeOpen ? "Currently accepting orders" : "Currently closed"}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-sm text-gray-400">Loading status...</span>
+                    )}
                   </div>
                 </div>
               </CardContent>

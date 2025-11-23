@@ -87,17 +87,23 @@ export default function DashboardPage() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium">Store Status:</span>
-                <Switch
-                  checked={!!storeInfo?.storeOpen}
-                  onCheckedChange={() => toggleStoreStatus()}
-                  className="data-[state=checked]:bg-pink-600"
-                />
-                <Badge
-                  variant={storeInfo?.storeOpen ? "default" : "secondary"}
-                  className={storeInfo?.storeOpen ? "bg-green-100 text-green-800" : ""}
-                >
-                  {storeInfo?.storeOpen ? "Open" : "Closed"}
-                </Badge>
+                {storeInfo ? (
+                  <>
+                    <Switch
+                      checked={!!storeInfo.storeOpen}
+                      onCheckedChange={() => toggleStoreStatus()}
+                      className="data-[state=checked]:bg-pink-600"
+                    />
+                    <Badge
+                      variant={storeInfo.storeOpen ? "default" : "secondary"}
+                      className={storeInfo.storeOpen ? "bg-green-100 text-green-800" : ""}
+                    >
+                      {storeInfo.storeOpen ? "Open" : "Closed"}
+                    </Badge>
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-400">Loading...</span>
+                )}
               </div>
             </div>
           </div>

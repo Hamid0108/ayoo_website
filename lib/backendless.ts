@@ -555,6 +555,7 @@ export class BackendlessService {
 
   static async updateStoreInfo(storeId: string, storeData: Partial<StoreInfo>): Promise<StoreInfo> {
     try {
+      console.log("BackendlessService: Updating store info...", { storeId, storeData })
       const updateData = {
         ...storeData,
         objectId: storeId,
@@ -562,6 +563,7 @@ export class BackendlessService {
       }
 
       const updatedStore = await Backendless.Data.of("StoreInfo").save(updateData)
+      console.log("BackendlessService: Store info updated successfully", updatedStore)
       return updatedStore as StoreInfo
     } catch (error) {
       console.error("Store info update failed:", error)

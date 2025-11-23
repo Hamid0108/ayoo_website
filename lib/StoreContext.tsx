@@ -91,8 +91,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const newStatus = !currentStoreInfo.storeOpen
-    console.log("Toggling store status to:", newStatus)
+    // Default to false if undefined, then toggle
+    const currentStatus = currentStoreInfo.storeOpen === true
+    const newStatus = !currentStatus
+    
+    console.log(`Toggling store status from ${currentStatus} to ${newStatus}`)
     
     // Optimistic update
     setStoreInfo((prev: StoreInfo | null) => prev ? { ...prev, storeOpen: newStatus } : null)
@@ -102,6 +105,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         storeOpen: newStatus
       })
       console.log("Store status updated successfully:", updated)
+      
+      // Ensure the returned object has the correct status
+      if (updated.storeOpen !== newStatus) {
+         console.warn("Server returned different status than expected:", updated.storeOpen)
+      }
+
       setStoreInfo(updated)
       toast({
         title: newStatus ? "Store Opened" : "Store Closed",
@@ -110,7 +119,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Failed to toggle store status:", error)
       // Revert
-      setStoreInfo((prev: StoreInfo | null) => prev ? { ...prev, storeOpen: !newStatus } : null)
+      setStoreInfo((prev: StoreInfo | null) => prev ? { ...prev, storeOpen: currentStatus } : null)
       toast({
         title: "Error",
         description: "Failed to update store status.",

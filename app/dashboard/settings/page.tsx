@@ -384,11 +384,15 @@ export default function SettingsPage() {
                     <Label>Store Status</Label>
                     <p className="text-sm text-gray-600">Toggle your store open/closed</p>
                   </div>
-                  <Switch
-                    checked={!!storeInfo?.storeOpen}
-                    onCheckedChange={() => toggleStoreStatus()}
-                    className="data-[state=checked]:bg-pink-600"
-                  />
+                  {storeInfo ? (
+                    <Switch
+                      checked={!!storeInfo.storeOpen}
+                      onCheckedChange={() => toggleStoreStatus()}
+                      className="data-[state=checked]:bg-pink-600"
+                    />
+                  ) : (
+                    <span className="text-sm text-gray-400">Loading...</span>
+                  )}
                 </div>
 
                 <div className="space-y-3">
