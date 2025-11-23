@@ -14,7 +14,11 @@ Backendless.serverURL = BACKENDLESS_CONFIG.apiUrl
 Backendless.initApp(BACKENDLESS_CONFIG.applicationId, BACKENDLESS_CONFIG.jsApiKey)
 
 // Types for our data models
-export interface MerchantUser extends Backendless.User {
+export interface MerchantUser {
+  objectId?: string
+  email?: string
+  password?: string
+  name?: string
   merchantId?: string
   firstName?: string
   lastName?: string
@@ -178,22 +182,22 @@ export class BackendlessService {
       await Promise.allSettled([
         Backendless.Data.of("Categories")
           .find(queryBuilder)
-          .then((results) => {
+          .then((results: any[]) => {
             return Promise.all(results.map((item: any) => Backendless.Data.of("Categories").remove(item)))
           }),
         Backendless.Data.of("Products")
           .find(queryBuilder)
-          .then((results) => {
+          .then((results: any[]) => {
             return Promise.all(results.map((item: any) => Backendless.Data.of("Products").remove(item)))
           }),
         Backendless.Data.of("Deals")
           .find(queryBuilder)
-          .then((results) => {
+          .then((results: any[]) => {
             return Promise.all(results.map((item: any) => Backendless.Data.of("Deals").remove(item)))
           }),
         Backendless.Data.of("StoreInfo") // Add this cleanup
           .find(queryBuilder)
-          .then((results) => {
+          .then((results: any[]) => {
             return Promise.all(results.map((item: any) => Backendless.Data.of("StoreInfo").remove(item)))
           }),
       ])
