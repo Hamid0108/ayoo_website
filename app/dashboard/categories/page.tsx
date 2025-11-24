@@ -53,9 +53,15 @@ export default function CategoriesPage() {
   const loadCategories = async () => {
     try {
       const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
-      if (!merchantId) return
+      console.log("CategoriesPage: Loading categories for merchantId:", merchantId)
+      
+      if (!merchantId) {
+        console.warn("CategoriesPage: No merchantId found, skipping load")
+        return
+      }
 
       const fetchedCategories = await BackendlessService.getCategories(merchantId)
+      console.log("CategoriesPage: Fetched categories:", fetchedCategories)
       setCategories(fetchedCategories || [])
     } catch (error) {
       console.error("Failed to load categories:", error)
@@ -89,6 +95,8 @@ export default function CategoriesPage() {
     e.preventDefault()
 
     const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+    console.log("CategoriesPage: Saving category with merchantId:", merchantId)
+
     if (!merchantId || saving) return
 
     try {

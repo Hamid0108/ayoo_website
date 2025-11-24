@@ -359,8 +359,32 @@ export class BackendlessService {
       queryBuilder.setSortBy(["sortOrder ASC", "createdAt ASC"])
       queryBuilder.setPageSize(100)
 
-      const categories = await Backendless.Data.of("Categories").find(queryBuilder)
+      let categories = await Backendless.Data.of("Categories").find(queryBuilder)
       console.log(`BackendlessService: Fetched ${categories.length} categories`)
+
+      // Fallback: If no categories found by merchantId, try finding by ownerId
+      // This handles cases where merchantId might be mismatched or missing in the record
+      if (categories.length === 0) {
+        try {
+          const currentUser = await this.getCurrentUser()
+          if (currentUser?.objectId) {
+             console.log("BackendlessService: No categories found by merchantId, trying ownerId:", currentUser.objectId)
+             const ownerQuery = Backendless.DataQueryBuilder.create()
+             ownerQuery.setWhereClause(`ownerId = '${currentUser.objectId}'`)
+             ownerQuery.setSortBy(["sortOrder ASC", "createdAt ASC"])
+             ownerQuery.setPageSize(100)
+             const ownerCategories = await Backendless.Data.of("Categories").find(ownerQuery)
+             
+             if (ownerCategories.length > 0) {
+               console.log(`BackendlessService: Found ${ownerCategories.length} categories by ownerId`)
+               categories = ownerCategories
+             }
+          }
+        } catch (e) {
+          console.warn("BackendlessService: Failed to fetch by ownerId fallback", e)
+        }
+      }
+
       return categories as Category[]
     } catch (error) {
       console.error("Failed to fetch categories:", error)
