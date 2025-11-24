@@ -353,38 +353,29 @@ export class BackendlessService {
 
   static async getCategories(merchantId: string): Promise<Category[]> {
     try {
-      console.log("BackendlessService: Fetching categories for merchant:", merchantId)
+      const currentUser = await this.getCurrentUser()
+      const ownerId = currentUser?.objectId
+      
+      console.log("BackendlessService: Fetching categories. MerchantId:", merchantId, "OwnerId:", ownerId)
+      
       const queryBuilder = Backendless.DataQueryBuilder.create()
-      queryBuilder.setWhereClause(`merchantId = '${merchantId}'`)
+      
+      // Construct a robust where clause that checks both merchantId AND ownerId
+      // This ensures we find the categories even if one ID is missing or mismatched
+      let whereClause = `merchantId = '${merchantId}'`
+      if (ownerId) {
+        whereClause += ` OR ownerId = '${ownerId}'`
+      }
+      
+      console.log("BackendlessService: Using where clause:", whereClause)
+      
+      queryBuilder.setWhereClause(whereClause)
       queryBuilder.setSortBy(["sortOrder ASC", "createdAt ASC"])
       queryBuilder.setPageSize(100)
 
-      let categories = await Backendless.Data.of("Categories").find(queryBuilder)
+      const categories = await Backendless.Data.of("Categories").find(queryBuilder)
       console.log(`BackendlessService: Fetched ${categories.length} categories`)
-
-      // Fallback: If no categories found by merchantId, try finding by ownerId
-      // This handles cases where merchantId might be mismatched or missing in the record
-      if (categories.length === 0) {
-        try {
-          const currentUser = await this.getCurrentUser()
-          if (currentUser?.objectId) {
-             console.log("BackendlessService: No categories found by merchantId, trying ownerId:", currentUser.objectId)
-             const ownerQuery = Backendless.DataQueryBuilder.create()
-             ownerQuery.setWhereClause(`ownerId = '${currentUser.objectId}'`)
-             ownerQuery.setSortBy(["sortOrder ASC", "createdAt ASC"])
-             ownerQuery.setPageSize(100)
-             const ownerCategories = await Backendless.Data.of("Categories").find(ownerQuery)
-             
-             if (ownerCategories.length > 0) {
-               console.log(`BackendlessService: Found ${ownerCategories.length} categories by ownerId`)
-               categories = ownerCategories
-             }
-          }
-        } catch (e) {
-          console.warn("BackendlessService: Failed to fetch by ownerId fallback", e)
-        }
-      }
-
+      
       return categories as Category[]
     } catch (error) {
       console.error("Failed to fetch categories:", error)

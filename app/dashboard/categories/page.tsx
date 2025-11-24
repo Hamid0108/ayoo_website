@@ -52,11 +52,13 @@ export default function CategoriesPage() {
 
   const loadCategories = async () => {
     try {
+      setLoading(true)
       const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
       console.log("CategoriesPage: Loading categories for merchantId:", merchantId)
       
       if (!merchantId) {
         console.warn("CategoriesPage: No merchantId found, skipping load")
+        setLoading(false)
         return
       }
 
@@ -179,21 +181,25 @@ export default function CategoriesPage() {
               <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
               <p className="text-gray-600">Organize your products into categories for better management</p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  className="bg-pink-600 hover:bg-pink-700"
-                  disabled={saving}
-                  onClick={() => {
-                    setEditingCategory(null)
-                    setFormData({ name: "", description: "", enabled: true })
-                    setIsDialogOpen(true)
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Category
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={loadCategories} disabled={loading}>
+                Refresh
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="bg-pink-600 hover:bg-pink-700"
+                    disabled={saving}
+                    onClick={() => {
+                      setEditingCategory(null)
+                      setFormData({ name: "", description: "", enabled: true })
+                      setIsDialogOpen(true)
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>{editingCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
