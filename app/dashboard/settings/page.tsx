@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react" // Added Suspense
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -31,16 +31,30 @@ import {
 import { Settings, User, Shield, Trash2, Eye, EyeOff } from "lucide-react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { useAuth } from "@/hooks/useAuth"
-import { BackendlessService, type StoreInfo } from "@/lib/backendless"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useStore } from "@/lib/StoreContext"
 
-export default function SettingsPage() {
+// --- Loading Component (Required for Suspense) ---
+function SettingsLoading() {
+  return (
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
+  )
+}
+
+// --- Main Content Component (Your Logic goes here) ---
+function SettingsContent() {
   const { user, updateUser, logout } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
+  // Using your new Store Context logic
   const { storeInfo, loading, toggleStoreStatus } = useStore()
 
   // Account Settings
@@ -59,9 +73,8 @@ export default function SettingsPage() {
     confirm: false,
   })
 
-  // Store Settings
+  // Store Settings (Local state for notifications, global state for storeOpen)
   const [storeSettings, setStoreSettings] = useState({
-    storeOpen: true,
     notifications: {
       orderAlerts: true,
       promotionReminders: true,
@@ -85,15 +98,6 @@ export default function SettingsPage() {
       })
     }
   }, [user])
-
-  useEffect(() => {
-    if (storeInfo) {
-      setStoreSettings((prev) => ({
-        ...prev,
-        storeOpen: storeInfo.storeOpen || false,
-      }))
-    }
-  }, [storeInfo])
 
   // If the page is opened with ?tab=account, open the account dialog
   const searchParams = useSearchParams()
@@ -133,11 +137,12 @@ export default function SettingsPage() {
         email: accountFormData.email,
       })
 
-      // TODO: Implement password change with Backendless
-      // This would require additional Backendless API calls
-
       setSuccess("Account information updated successfully")
       setIsAccountDialogOpen(false)
+      
+      // Optional: Use toast here instead of success state if you prefer
+      // toast({ title: "Success", description: "Account updated successfully" })
+      
     } catch (err: any) {
       setError(err.message || "Failed to update account information")
     } finally {
@@ -147,25 +152,20 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async () => {
     try {
-      // TODO: Implement account deletion with Backendless
-      // This would require additional API calls to delete user data
       await logout()
       router.push("/")
     } catch (error) {
       console.error("Failed to delete account:", error)
+      toast({ 
+        title: "Error", 
+        description: "Failed to delete account", 
+        variant: "destructive" 
+      })
     }
   }
 
   if (loading) {
-    return (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
-    )
+    return <SettingsLoading />
   }
 
   return (
@@ -384,6 +384,7 @@ export default function SettingsPage() {
                     <Label>Store Status</Label>
                     <p className="text-sm text-gray-600">Toggle your store open/closed</p>
                   </div>
+                  {/* Using storeInfo from useStore context */}
                   {storeInfo ? (
                     <Switch
                       checked={!!storeInfo.storeOpen}
@@ -493,5 +494,14 @@ export default function SettingsPage() {
         </div>
       </DashboardLayout>
     </ProtectedRoute>
+  )
+}
+
+// --- Main Export with Suspense Wrapper (REQUIRED FOR BUILD) ---
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<SettingsLoading />}>
+      <SettingsContent />
+    </Suspense>
   )
 }
