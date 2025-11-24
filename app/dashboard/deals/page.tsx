@@ -76,9 +76,9 @@ export default function DealsPage() {
 
   const loadDeals = async () => {
     try {
-      if (!user) return
+      const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+      if (!merchantId) return
 
-      const merchantId = user.merchantId || `merchant_${user.objectId}`
       const fetchedDeals = await BackendlessService.getDeals(merchantId)
       setDeals(fetchedDeals || [])
     } catch (error) {
@@ -153,11 +153,11 @@ export default function DealsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!user || saving) return
+    const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+    if (!merchantId || saving) return
 
     try {
       setSaving(true)
-      const merchantId = user.merchantId || `merchant_${user.objectId}`
 
       const dealData = {
         ...formData,

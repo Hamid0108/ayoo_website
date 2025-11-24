@@ -33,22 +33,23 @@ export default function DashboardPage() {
       return
     }
 
-    if (user?.merchantId) {
+    if (user) {
       loadStats()
     } else {
-      // If no merchantId, set loading to false and show default stats
+      // If no user, set loading to false
       setLoading(false)
     }
   }, [user, router])
 
   const loadStats = async () => {
     try {
-      if (!user?.merchantId) {
+      const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+      if (!merchantId) {
         setLoading(false)
         return
       }
 
-      const merchantStats = await BackendlessService.getMerchantStats(user.merchantId)
+      const merchantStats = await BackendlessService.getMerchantStats(merchantId)
       setStats({
         totalCategories: merchantStats.totalCategories,
         totalProducts: merchantStats.totalProducts,
