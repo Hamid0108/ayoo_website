@@ -64,7 +64,7 @@ export default function ProductsPage() {
       return
     }
 
-    if (user?.merchantId) {
+    if (user) {
       loadData()
     } else {
       setLoading(false)
@@ -74,14 +74,16 @@ export default function ProductsPage() {
   const loadData = async () => {
     try {
       setError(null)
-      if (!user?.merchantId) {
+      const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+      
+      if (!merchantId) {
         setLoading(false)
         return
       }
 
       const [fetchedProducts, fetchedCategories] = await Promise.all([
-        BackendlessService.getProducts(user.merchantId).catch(() => []),
-        BackendlessService.getCategories(user.merchantId).catch(() => []),
+        BackendlessService.getProducts(merchantId).catch(() => []),
+        BackendlessService.getCategories(merchantId).catch(() => []),
       ])
 
       setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : [])
@@ -203,11 +205,16 @@ export default function ProductsPage() {
         .map((s) => s.trim())
         .filter(Boolean)
 
+      const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+      if (!merchantId) {
+        throw new Error("Merchant ID not found")
+      }
+
       const productData = {
         name: formData.name,
         description: formData.description,
         price: formData.price,
-        merchantId: user.merchantId,
+        merchantId: merchantId,
         categoryId: formData.categoryId,
         available: formData.available,
         rating: formData.rating,
