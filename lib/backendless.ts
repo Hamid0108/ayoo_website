@@ -310,6 +310,12 @@ export class BackendlessService {
   // Category Methods
   static async saveCategory(categoryData: Omit<Category, "objectId" | "createdAt" | "updatedAt">): Promise<Category> {
     try {
+      console.log("BackendlessService: Saving category...", categoryData)
+
+      if (!categoryData.merchantId) {
+        throw new Error("Merchant ID is required to save a category")
+      }
+
       const currentUser = await this.getCurrentUser()
       if (!currentUser) throw new Error("No user logged in")
 
@@ -321,6 +327,7 @@ export class BackendlessService {
       }
 
       const savedCategory = await Backendless.Data.of("Categories").save(category)
+      console.log("BackendlessService: Category saved successfully", savedCategory)
       return savedCategory as Category
     } catch (error) {
       console.error("Category save failed:", error)
@@ -346,11 +353,14 @@ export class BackendlessService {
 
   static async getCategories(merchantId: string): Promise<Category[]> {
     try {
+      console.log("BackendlessService: Fetching categories for merchant:", merchantId)
       const queryBuilder = Backendless.DataQueryBuilder.create()
       queryBuilder.setWhereClause(`merchantId = '${merchantId}'`)
       queryBuilder.setSortBy(["sortOrder ASC", "createdAt ASC"])
+      queryBuilder.setPageSize(100)
 
       const categories = await Backendless.Data.of("Categories").find(queryBuilder)
+      console.log(`BackendlessService: Fetched ${categories.length} categories`)
       return categories as Category[]
     } catch (error) {
       console.error("Failed to fetch categories:", error)

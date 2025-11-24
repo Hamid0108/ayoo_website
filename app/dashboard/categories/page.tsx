@@ -45,16 +45,17 @@ export default function CategoriesPage() {
       return
     }
 
-    if (user?.merchantId) {
+    if (user) {
       loadCategories()
     }
   }, [user, router])
 
   const loadCategories = async () => {
     try {
-      if (!user?.merchantId) return
+      const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+      if (!merchantId) return
 
-      const fetchedCategories = await BackendlessService.getCategories(user.merchantId)
+      const fetchedCategories = await BackendlessService.getCategories(merchantId)
       setCategories(fetchedCategories || [])
     } catch (error) {
       console.error("Failed to load categories:", error)
@@ -87,7 +88,8 @@ export default function CategoriesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!user?.merchantId || saving) return
+    const merchantId = user?.merchantId || (user?.objectId ? `merchant_${user.objectId}` : null)
+    if (!merchantId || saving) return
 
     try {
       setSaving(true)
@@ -100,7 +102,7 @@ export default function CategoriesPage() {
         // Add new category
         const newCategory = await BackendlessService.saveCategory({
           ...formData,
-          merchantId: user.merchantId,
+          merchantId: merchantId,
         })
         setCategories((prev) => [...prev, newCategory])
       }
