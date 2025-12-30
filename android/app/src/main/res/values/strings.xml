@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ayoo Merchant</string>
+    <string name="title_activity_main">Ayoo Merchant</string>
+    <string name="package_name">com.ayoo.merchant</string>
+    <string name="custom_url_scheme">com.ayoo.merchant</string>
+</resources>
